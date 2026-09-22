@@ -1,8 +1,6 @@
 # What Can We Verify?
 
-Research code for evaluating claims in LLM-generated security findings.
-Keep it small: readable scripts, explicit inputs and saved outputs. Add a component
-only when an experiment needs it to answer a research question.
+Research repository for evaluating claims in LLM-generated security findings.
 
 The first step prepares **VUL4J-18**, the JSPWiki path-traversal case
 **CVE-2019-0225 / CWE-22**, for a localized code review.
