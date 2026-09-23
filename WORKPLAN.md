@@ -2,6 +2,8 @@
 
 Stand: 2026-09-23. Aus `Claim_Pipeline_Arbeitsentwurf_v0_1.md` (22.09.2026) in einen fortlaufenden Arbeitsplan überführt und mit Repo-Stand `8894dabb` abgeglichen. Diese Datei ersetzt den ursprünglichen Entwurf als aktuellen Arbeitsplan; dessen Vorschläge werden dadurch nicht automatisch zu beschlossenen Entscheidungen.
 
+Aktueller Abgleich: Vorbereitung und bisherige Dokumentation sind über `3a4eb9e` in `main` integriert. Schritt 2 ist auf `finding-generator` teilweise umgesetzt: `generate_findings.py` und `review_prompt_v1.txt` ergänzt; zehn Offline-Tests bestanden. Der echte Review-Lauf bleibt offen.
+
 ## Pflege und Ziel
 
 **Hier steht immer der aktuelle Arbeitsplan.** Nach Fortschritt, Planänderungen oder neuen Entscheidungen Status, nächsten Schritt, Abschlusskriterien und offene Fragen aktualisieren — laufend, auch vor einem spontanen Handoff. `AGENTS.md` enthält die Entwicklungsregeln; `HANDOFF.md` den überprüften Übergabestand. Dort nur kurz auf den nächsten Schritt hier verweisen, keinen zweiten Detailplan pflegen.
@@ -16,7 +18,7 @@ Erster Meilenstein: **ein Benchmark-Fall → ein gespeicherter Review-Lauf → F
 |---|---|---|
 | 1a. VUL4J-18 auswählen und Modellkontext vorbereiten | Erledigt | Fixierter Export, getrennte Referenzen, Hashes und Offline-Tests vorhanden. |
 | 1b. Java-PoV an verwundbarer/gefixter Version ausführen | Offen | Sicherheitsrelevantes Verhalten, Umgebung, Befehle und Logs beider Versionen dokumentiert; Buildfehler separat erfasst. |
-| 2. Einen Review-Lauf erzeugen und speichern | **Nächster Implementierungsschritt** | Eingabe, Prompt, Rohantwort, Findings und Laufstatus nachvollziehbar gespeichert; auch leere Ergebnisse/Fehler erhalten. |
+| 2. Einen Review-Lauf erzeugen und speichern | **In Arbeit; echter Lauf offen** | Eingabe, Prompt, Rohantwort, Findings und Laufstatus nachvollziehbar gespeichert; auch leere Ergebnisse/Fehler erhalten. |
 | 3. Erste Findings manuell zerlegen, Codebook erstellen | Geplant | Jede Referenzaussage mit Originalzitat, Bedingungen und begründeter Typisierung erfasst. |
 | 4. Decomposer und formale Validierung ergänzen | Geplant | Gespeicherte Findings wiederverwendbar; ungültige Ausgaben sichtbar; Extraktion manuell bewertet. |
 | 5. Entwicklungspilot erweitern | Vorschlag | Umfang vorab festlegen; alle Läufe und Extraktionsfehler erfassen. |
@@ -34,9 +36,13 @@ Für 1b den vollständigen Benchmark separat aufsetzen. Java/Maven-Versionen, Be
 
 Nur `model_input/` an den Generator geben. Manifest, Referenzen, Advisory und Git-Historie ausschließen; bei Agenten den Zugriff technisch begrenzen. Auch diese Projektdokumentation enthält Referenzwissen und gehört nicht in den Review-Kontext. CVE-Hinweise im Quelltext gegebenenfalls erfassen. Ausgewählter Kontext erlaubt keine Aussage zur Suche im gesamten Repo; ausgeblendete IDs verhindern kein Modellvorwissen. Fehlende Filter, Aufrufer oder Deployment-Konfiguration bleiben fehlende Evidenz.
 
-## 2. Finding-Generator — als Nächstes
+## 2. Finding-Generator — echter Lauf noch offen
 
-Minimaler Vorschlag: `generate_findings.py` plus versionierter Review-Prompt, zunächst ein fester Modellaufruf ohne Agenten-Tools. Vor Umsetzung Anbieter, Modell und Budget festlegen. Nur die fünf Exportdateien mit Pfaden und Originalzeilennummern übergeben.
+Implementiert und offline geprüft: `generate_findings.py` plus `review_prompt_v1.txt`, ein Modellaufruf ohne Agenten-Tools, nur die fünf Exportdateien mit Pfaden und Originalzeilennummern. Alle zehn Tests bestanden (drei Vorbereitung, sieben Generator). Keine automatische Wiederholung oder Formatkorrektur. Generator-Fixtures sind ausschließlich synthetisch.
+
+**Vorläufige Implementierungsannahme / Planabweichung:** Der Aufrufweg wurde bereits für OpenAI Responses implementiert, während die erfragte Versuchsauswahl noch offen ist. Es gibt keine Provider-Abstraktion. Modellkennung und Ausgabetokenlimit sind Pflichtargumente ohne Default; Anbieter/Modell/Geldbudget des echten Versuchs sind damit nicht beschlossen. Vor dem echten Lauf Auswahl und Zugang klären. Derzeit ist kein API-Key in der Prozessumgebung gesetzt. Kein echter Lauf und keine empirischen Findings vorhanden.
+
+Gespeicherte Artefakte: fünf unveränderte Quelldateien, Prompt, exakter Request, unveränderte Provider-Antwort (falls erhalten), gültige Findings mit runbezogenen stabilen IDs und Manifest. Leere, ungültige und fehlgeschlagene Ergebnisse werden getrennt erfasst. Unveränderte Reports bleiben Basis für Schritt 3. Tokenusage wird übernommen; Kosten bleiben `null`, das Ausgabetokenlimit begrenzt keine Geldsumme. Bedienung und Statusgrenzen stehen in README.
 
 Pro Lauf speichern:
 
@@ -47,7 +53,7 @@ Pro Lauf speichern:
 
 Die vier Claim-Familien nicht als Pflichtfelder vorgeben: sonst verzerren wir ihre beobachtete Verteilung. Reports vor Zerlegung weder verbessern noch korrigieren. Leere Ergebnisse und Fehler nicht wegfiltern oder bis zum gewünschten Finding wiederholen. Bei späteren Tools auch Aufrufe, gelesenen Kontext und Budgets protokollieren.
 
-Promptentwurf (noch nicht als Experiment eingefroren):
+Ursprünglicher Promptentwurf (Implementierung in `review_prompt_v1.txt`, noch kein Experiment damit durchgeführt):
 
 ```text
 Review the supplied source-code snapshot for security vulnerabilities.
@@ -136,13 +142,13 @@ Nach Entwicklung Codebook und Prompts für eine eigene Evaluationsmenge einfrier
 | Baustein | Ausgabe / Stand |
 |---|---|
 | `prepare_case.py` | Vorhanden: `model_input/`, `reference/`, `manifest.json`. |
-| `generate_findings` | Vorschlag: `generation_raw.json`, `findings.jsonl`, `run_manifest.json` plus Eingabe/Prompt. |
+| `generate_findings.py` | Implementiert: `generation_raw.json` (falls erhalten), `findings.jsonl` (nur gültige Ausgaben), `run_manifest.json`, `request.json` plus Originalquellen/Prompt; echter Lauf offen. |
 | `decompose_findings` | Vorschlag: `decomposition_raw.json`, `claims.jsonl`. |
 | `validate_claims` | Vorschlag: `validation.json`. |
 | Manuelles Review | Vorschlag: `annotations.jsonl` mit Original und Korrektur; zunächst kein eigenes UI/Skript nötig. |
 
-Dateinamen und getrennte Skripte sind Vorschläge, keine Pflichtarchitektur. Gespeicherte Artefakte erlauben neue Zerlegung ohne erneuten Generatorlauf. Standardbibliothek bevorzugen; Modellzugriff und Schema-Prüfung nur so weit ergänzen, wie der konkrete Versuch sie benötigt. Kein Framework und keine Datenbank erforderlich.
+Dateinamen und getrennte Skripte für die noch offenen Bausteine sind Vorschläge, keine Pflichtarchitektur. Gespeicherte Artefakte erlauben neue Zerlegung ohne erneuten Generatorlauf. Standardbibliothek bevorzugen; Modellzugriff und Schema-Prüfung nur so weit ergänzen, wie der konkrete Versuch sie benötigt. Kein Framework und keine Datenbank erforderlich.
 
-Offen vor Schritt 2: Modellanbieter/-kennung und Budget. Offen vor Schritt 4: Codebook, finales Schema/Offsets und Retry-Regel. Offen vor Evaluation: PoV-Reproduktion, Stichprobe, Verifikatoren, Referenzannotation und Metriken.
+Offen zum Abschluss von Schritt 2: Versuchsanbieter/-modell und Budget festlegen, API-Zugang verfügbar machen, echten Lauf speichern. OpenAI ist bislang eine Implementierungsannahme. Offen vor Schritt 4: Codebook, finales Schema/Offsets und Retry-Regel. Offen vor Evaluation: PoV-Reproduktion, Stichprobe, Verifikatoren, Referenzannotation und Metriken.
 
 Methodische Ausgangspunkte aus dem ursprünglichen Entwurf (hier nicht neu bewertet): [Vul4J](https://github.com/tuhh-softsec/Vul4J), [RefChecker](https://github.com/amazon-science/RefChecker), [DnDScore](https://arxiv.org/abs/2412.13175). Literatur- und Neuheitsbehauptungen bleiben vorläufig.

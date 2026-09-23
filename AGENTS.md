@@ -21,7 +21,7 @@ python3 -m unittest -v
 git diff --check
 ```
 
-Die drei Offline-Tests prüfen Referenztrennung/Byteerhalt/Hashes, Schutz bestehender Ausgaben und Downloadfehler ohne Teilausgabe. Bei Codeänderungen ausführen; weitere Tests nur für konkrete Risiken ergänzen.
+Die zehn Offline-Tests prüfen Fallvorbereitung und Generator: Referenztrennung/Byteerhalt/Hashes, Schutz bestehender Ausgaben, Downloadfehler ohne Teilausgabe sowie leere/ungültige Modellantworten, HTTP-/Netzfehler, fehlenden API-Key und Symlink-Ausschluss. Generatorantworten sind synthetische Fixtures, keine empirischen Findings. Bei Codeänderungen ausführen; weitere Tests nur für konkrete Risiken ergänzen.
 
 Optionaler echter Vorbereitungslauf bei Änderungen am Download/Export (Netzzugriff auf `raw.githubusercontent.com`, Ziel muss neu sein):
 

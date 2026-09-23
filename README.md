@@ -80,5 +80,70 @@ Run the small offline checks with:
 python3 -m unittest -v
 ```
 
-Next: generate and save one finding from this context, then manually inspect its
-claim decomposition before adding automated verification.
+## Generate one localized review
+
+`generate_findings.py` uses the standard library and a single OpenAI Responses
+request. This provider is a provisional implementation choice; the experimental
+model and budget have not been selected. No real review has been run yet.
+
+Set `OPENAI_API_KEY` in the local environment without putting it in a tracked
+file or command argument. After choosing the model (prefer a pinned snapshot)
+and budget, replace both placeholders below and use a new output directory:
+
+```bash
+python3 generate_findings.py \
+  --model MODEL_SNAPSHOT_ID \
+  --max-output-tokens OUTPUT_TOKEN_LIMIT \
+  --output data/runs/VUL4J-18-review-001
+```
+
+The token limit includes reasoning tokens and is **not a monetary budget**;
+input tokens also cost money. Choose it with the selected model's pricing in
+mind. No model or token limit is silently selected. The HTTP timeout is 180
+seconds, with no automatic retry, repair request or follow-up. An uncertain
+network outcome is retained as an error, not automatically resubmitted.
+
+Only the five allowlisted files under `--model-input` (default:
+`data/VUL4J-18/model_input`) are read into the request. Root/file/directory
+symlinks within that input are rejected. Extra files are ignored. The versioned
+`review_prompt_v1.txt` and a view with paths and original one-based line numbers
+are sent; source bytes are separately preserved unchanged. No reference,
+manifest, case ID, project instructions, chat history, external sources or
+agent tools are supplied. The request disables input truncation and response
+storage, and requests JSON with only finding titles and reports, without claim
+type categories. This is report generation, not independent verification.
+
+| Run output | Purpose |
+|---|---|
+| `model_input/`, `review_prompt_v1.txt` | Exact source and prompt bytes |
+| `request.json` | Exact HTTP request body, excluding the authorization header |
+| `generation_raw.json` | Unmodified provider response body, including HTTP errors; may not be valid JSON |
+| `findings.jsonl` | Validated titles/reports with stable IDs scoped to the saved run; report text is not corrected |
+| `run_manifest.json` | Case/run IDs, timestamps, duration, requested/returned model, sent parameters, hashes, status, available usage and errors |
+
+`completed` means structurally valid findings were saved, not that their claims
+are true. An explicit empty list produces `no_findings` and an empty JSONL file.
+Malformed output, refusals and incomplete responses produce `invalid_output`;
+HTTP/network failures or a missing key produce `run_error`. Neither error
+status produces a findings file. Raw response bytes are saved whenever received;
+there is no response file if the request was not sent or no body was received.
+Usage is saved as returned; `cost_usd` stays `null` (not zero), since the script
+does not calculate billing. Provider defaults not explicitly set remain visible
+only insofar as the provider returns them in the raw response.
+
+Input/configuration errors before a run is created leave no run directory.
+Started runs remain on disk, and an existing output is always refused. A
+process killed before finalization can leave `running` in the manifest: that
+is an unfinished run, not evidence of no findings. All experimental outputs
+should remain under the ignored `data/` directory.
+
+The seven generator tests use synthetic responses and no network; together
+with the three preparation tests they cover the concrete isolation, preservation
+and failure risks. They do not establish live API/model compatibility. Protocol
+references: [OpenAI text generation](https://developers.openai.com/api/docs/guides/text),
+[JSON output](https://developers.openai.com/api/docs/guides/structured-outputs),
+[reasoning token limits](https://developers.openai.com/api/docs/guides/reasoning).
+
+Next: select the experimental model and budget, make an API key available, and
+save one real review (including an empty result or failure). Then manually
+inspect any findings and their claims. Java-PoV reproduction is still pending.
