@@ -14,16 +14,17 @@ tests/
   test_02_generate_findings.py
 resources/
   review_prompt_v1.txt
+  reproduce_vul4j18.md
 data/                       # generated, ignored by Git
 ```
 
 Project documentation and the license remain at the repository root.
 Run the commands below from that root.
 
-Current stage: case preparation and the finding generator are implemented.
-One complete live review with one finding is saved and its artifact integrity has
-been checked; its security claims remain unverified. Java-PoV reproduction is the
-next requested step. Claim extraction and independent claim verification remain pending. See
+Current stage: case preparation, one complete review and the Java-PoV reproduction
+are complete. The review artifact integrity has been checked, but its security
+claims remain unverified. Claim extraction and independent claim verification
+remain pending. See
 [WORKPLAN.md](WORKPLAN.md) for the current plan and [HANDOFF.md](HANDOFF.md) for
 the checked state; keep this README synchronized with user-facing changes.
 
@@ -91,8 +92,18 @@ fix's parent, `f140a2a4371735ad24d04a1d78c6e1d9ceaed76f`: its bytes match.
 The fix changes the forwarding destination returned by `getForwardPage()`.
 The PoV checks forwarding URLs using mocked servlet requests. It is not, by
 itself, an end-to-end proof of arbitrary file reads or unauthenticated access.
-This script **does not run the PoV or claim reproduction**. A later execution
-step needs the complete benchmark and its Java/Maven setup; see the pinned
+This preparation script **does not run the PoV**. Step 1b was executed separately
+with the complete benchmark, Eclipse Temurin 8 and Maven 3.9.16. Both unchanged
+PoV tests failed on the vulnerable version because the actual forward URL was
+`/?page=Main&` instead of `/Wiki.jsp?page=Main&`; both passed after applying the
+original upstream fix. Builds succeeded and neither test run contained errors or
+skips. Exact commands, provenance, environment and limits are documented in
+[resources/reproduce_vul4j18.md](resources/reproduce_vul4j18.md); full logs remain
+under the ignored `data/pov/VUL4J-18-001/`.
+
+This differential result reproduces the forwarding behavior covered by the mock
+servlet tests. It does not by itself prove arbitrary file reads, unauthenticated
+remote exploitation or behavior in a deployed JSPWiki instance. See the pinned
 [Vul4J instructions](https://github.com/tuhh-softsec/Vul4J/blob/376411da11fa705019f731404de1d0679fe73537/README.md).
 
 Generated data stays untracked. Our code uses this repository's MIT license;
@@ -241,9 +252,9 @@ Protocol references: [Chat Completions](https://openrouter.ai/docs/api/reference
 [provider routing and price caps](https://openrouter.ai/docs/guides/routing/provider-selection),
 [context compression](https://openrouter.ai/docs/guides/features/message-transforms).
 
-Next requested step: execute the Java-PoV against vulnerable and fixed versions
-(step 1b in WORKPLAN). Keep the completed review unchanged; no further generator
-request is needed. Manual claim decomposition follows later.
+The Java-PoV comparison in step 1b is complete. Keep the completed review and PoV
+evidence unchanged; no further generator request is needed. The next planned work
+is manual decomposition of the saved finding and refinement of the codebook.
 
 For `finish_reason: length`, the saved response is incomplete and must not be
 repaired or counted as findings. Reasoning can consume the same output budget;
