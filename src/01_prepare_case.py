@@ -35,15 +35,22 @@ MODEL_FILES = (
 )
 
 
+# Lädt eine Quelldatei von der angegebenen URL mit 30 Sekunden Timeout.
+# Gibt die unveränderten Bytes zurück; Downloadfehler gehen an den Aufrufer.
 def download(url: str) -> bytes:
     with urlopen(url, timeout=30) as response:
         return response.read()
 
 
+# Wandelt ein Dictionary in lesbares JSON mit abschließendem Zeilenumbruch um.
+# Gibt UTF-8-Bytes zurück, die direkt als Datei gespeichert werden können.
 def json_bytes(value: dict) -> bytes:
     return (json.dumps(value, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
 
 
+# Erstellt den VUL4J-18-Export aus fixierten Quellen und prüft die Dataset-Zuordnung.
+# Trennt Modellkontext von Referenzen und speichert Herkunft und Datei-Hashes.
+# Veröffentlicht nur den vollständigen Export an einem neuen Ziel; führt keinen PoV aus.
 def prepare_case(output: Path) -> None:
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"Output already exists: {output}. Choose a new --output path.")
@@ -107,6 +114,8 @@ def prepare_case(output: Path) -> None:
     print("Give the model only model_input/. The PoV was saved, not executed.")
 
 
+# Liest das CLI-Ausgabeverzeichnis und startet die Fallvorbereitung.
+# Meldet erwartete Download-, Datei- und Datenfehler mit Exit-Code 1.
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
