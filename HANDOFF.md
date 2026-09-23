@@ -2,6 +2,8 @@
 
 Stand: 2026-09-23. Grundlage: zugänglicher Projektkontext, Research Map/Arbeitsentwurf und aktuell gelesene GitHub-Dateien. Keine endgültige RQ-Fassung oder vollständige Paper-Spezifikation im Repo vorhanden.
 
+Der aktuelle Arbeitsplan steht verbindlich in [WORKPLAN.md](WORKPLAN.md). Zu Sessionbeginn mitlesen und nach Fortschritt oder Planänderungen laufend aktuell halten, auch bei einem spontanen Handoff. Diese Datei dokumentiert den überprüften Übergabestand.
+
 ## Ziel und Arbeitsfragen
 
 LLM-Security-Findings in einzelne prüfbare Aussagen zerlegen und untersuchen, welche unabhängige Evidenz diese Aussagen trägt. Arbeitsfragen aus dem Forschungsentwurf, noch keine final verabschiedeten Paper-RQs:
@@ -24,9 +26,9 @@ Zielpipeline: bekannter verwundbarer Code → LLM/Security-Report → Claim-Zerl
 ## Tatsächlicher Repo-Stand
 
 - Implementierungsbranch: `prepare-vul4j-18`; [PR #1](https://github.com/sebi-gr/What-Can-We-Verify/pull/1) offen, nicht gemergt (am Stichtag).
-- Implementierung: `224f248856572e9fc980a616347e5d16f068182b`; zuletzt geprüfter Stand vor diesen Übergabedateien: `c0e5eb23520e6ce95ad8faed06d1ef7a9ba6b901` (nachfolgende README-Änderung).
+- Implementierung: `224f248856572e9fc980a616347e5d16f068182b`; README-Änderung: `c0e5eb23520e6ce95ad8faed06d1ef7a9ba6b901`; zuletzt geprüfter Stand vor der Arbeitsplan-Ergänzung: `8894dabb04abf442f5e62d678370756d092b5f8a` (erste Übergabedateien).
 - `main` steht noch auf `04baf6af5c2cd416e93f31fbf3b5003b53b44265` und enthält die Implementierung nicht.
-- Diese Übergabe ergänzt ausschließlich `AGENTS.md` und `HANDOFF.md` auf dem Implementierungsbranch. Aktuellen Übergabecommit mit `git log -1 -- AGENTS.md HANDOFF.md` ermitteln.
+- Aktuelle Dokumentationsänderung: Arbeitsentwurf in `WORKPLAN.md` überführt und Pflegepflicht in `AGENTS.md`/`HANDOFF.md` verankert; Code unverändert. Aktuellen Dokumentationscommit mit `git log -1 -- AGENTS.md HANDOFF.md WORKPLAN.md` ermitteln.
 
 | Vorhanden | Verhalten |
 |---|---|
@@ -41,22 +43,15 @@ Standardausgabe: `data/VUL4J-18/`, durch Git ignoriert. Fixierte Dataset-/Fall-/
 
 ## Prüfstand und Grenzen
 
-- **Für diese Übergabe erneut geprüft:** Python-Dateien stimmen bytegenau mit GitHub-Stand `c0e5eb2` überein; `python3 -m unittest -v`: 3/3 bestanden. Dokumentationsdiff ohne Whitespace-Fehler.
+- **Beim ersten Handoff (23.09.2026) geprüft:** Python-Dateien stimmen bytegenau mit GitHub-Stand `c0e5eb2` überein; `python3 -m unittest -v`: 3/3 bestanden. Dokumentationsdiff ohne Whitespace-Fehler. Bei der anschließenden WORKPLAN-Ergänzung nur Dokumentation geprüft; Python-Tests nicht erneut ausgeführt.
 - **Zuvor ausgeführt, in PR #1 dokumentiert:** echter Vorbereitungslauf; alle neun heruntergeladenen Datei-Hashes geprüft; verwundbarer Constructor bytegleich mit Upstream-Fix-Parent; Fix/PoV-Testmethoden inspiziert; `git diff --check` bestanden. Downloadlauf bei dieser Übergabe nicht wiederholt.
 - **Nicht ausgeführt:** Java-Build und PoV an verwundbarer/gefixter Version. Es liegt nur ein Quelltextausschnitt vor, kein ausführbares JSPWiki-Checkout.
 - Der PoV prüft Forwarding-URLs mit Servlet-Mocks. Daraus folgt allein kein Nachweis beliebiger Dateizugriffe oder unauthentifizierter Ausnutzbarkeit.
 - Fehlende Filter, andere URL-Constructor, WikiEngine und reale Deployment-Konfiguration begrenzen Aussagen. Quellkonfiguration ist kein Beleg für ein laufendes Deployment.
 - Der Snapshot kann Benchmark-Anpassungen enthalten. Modellvorwissen über die CVE ist trotz getrennter Referenzen möglich. Keine empirischen Claim-Ergebnisse vorhanden.
 
-## Nächster konkreter Implementierungsschritt
+## Nächster Schritt und offene Planung
 
-Gemäß README einen minimalen `generate_findings.py`-Schritt mit versioniertem Review-Prompt ergänzen: nur die fünf Dateien aus `model_input/` mit Pfaden/Zeilen an einen Modellaufruf übergeben; exakte Eingabe, Rohantwort, Modellkennung/Parameter und Laufstatus speichern. Leere Findings und Fehler erhalten; die vier Claim-Familien nicht als Pflichtausgabe vorgeben. Anbieter, Modell und Budget sind noch offen.
+Weiter mit **Schritt 2 in [WORKPLAN.md](WORKPLAN.md)**: einen minimalen Finding-Generator ergänzen und einen nachvollziehbaren Review-Lauf speichern. Anbieter, Modell und Budget sind offen. Die separate PoV-Reproduktion (Schritt 1b) ist weiterhin unerledigt.
 
-Abschlusskriterium: ein nachvollziehbar gespeicherter Review-Lauf (auch ohne Finding), ohne Referenzmaterial im Modellinput. Anschließend erste echte Findings manuell zerlegen; erst danach Decomposer und formale Validierung ergänzen. Vor empirischen Aussagen zur Reproduktion bleibt die separate PoV-Ausführung offen.
-
-## Vorschläge, noch nicht beschlossen
-
-- Entwicklungspilot mit fünf Fällen und drei Review-Läufen je Fall; kein festgelegter Evaluationsumfang.
-- Kleines Codebook und JSON/JSONL für Claims mit exakten Report-Zitaten, Bedingungen und Unsicherheit; endgültiges Schema offen.
-- Verifikationszustände `Supported`, `Contradicted`, `Inconclusive`, `Verification failure`; fehlgeschlagene Reproduktion widerlegt keine Schwachstelle.
-- Auswahl statischer/dynamischer Verifikatoren, Referenzannotation und Metrikdefinitionen noch offen. Literatur-/Neuheitsbehauptungen sind vorläufig.
+WORKPLAN.md enthält den aus dem Arbeitsentwurf übernommenen Ablauf, Abschlusskriterien, Prompt-/Schemaentwürfe und die ausdrücklich als Vorschläge markierten Pilot- und Verifikationsoptionen. Die endgültige RQ-Fassung, Taxonomie und Evaluationsplanung sind noch nicht beschlossen.

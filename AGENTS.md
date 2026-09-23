@@ -1,7 +1,8 @@
 # Entwicklungsregeln
 
-- Zu Beginn jeder Session zuerst `HANDOFF.md` lesen, danach `README.md` und den tatsächlichen Git-Stand prüfen. Veraltete Angaben als solche korrigieren.
+- Zu Beginn jeder Session zuerst `HANDOFF.md` und `WORKPLAN.md` lesen, danach `README.md` und den tatsächlichen Git-Stand prüfen. Veraltete Angaben als solche korrigieren.
 - `HANDOFF.md` nach relevanten Entscheidungen, Änderungen und Prüfungen laufend aktualisieren, nicht erst am Sessionende. Auch bei einem spontanen Handoff müssen Stand, offene Punkte und nächster Schritt nachvollziehbar sein. Beschlüsse, Vorschläge und ungeprüfte Annahmen getrennt halten.
+- `WORKPLAN.md` ist die maßgebliche Quelle für den aktuellen Arbeitsplan: Reihenfolge, Status, Abschlusskriterien und offene Planentscheidungen. Nach Fortschritt oder Planänderungen sofort aktualisieren, auch während einer Session und vor einem spontanen Handoff. Vorschläge ausdrücklich markieren; `HANDOFF.md` hält den überprüften Stand fest und verweist für den Plan auf `WORKPLAN.md`.
 - **KISS:** Wir bauen einen kleinen Forschungsprototyp, um die Paper-RQs zu evaluieren und zu beantworten. Keine komplexe OSS-Plattform und kein Overengineering.
 - Kleine, lesbare Skripte und explizite Ein-/Ausgaben bevorzugen. Minimal, aber verständlich: keine versteckte Logik oder komplizierten Abkürzungen, nur um Code zu verkürzen.
 - Komponenten, Abhängigkeiten und Abstraktionen nur hinzufügen, wenn der nächste konkrete Versuch sie braucht. Keine vorsorglichen Frameworks, Plugin-Systeme oder allgemeinen Pipeline-Engines.
