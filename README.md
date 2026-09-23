@@ -2,6 +2,31 @@
 
 Research repository for evaluating claims in LLM-generated security findings.
 
+Repository layout:
+
+```text
+src/
+  01_prepare_case.py
+  02_generate_findings.py
+tests/
+  __init__.py
+  test_01_prepare_case.py
+  test_02_generate_findings.py
+resources/
+  review_prompt_v1.txt
+data/                       # generated, ignored by Git
+```
+
+Project documentation and the license remain at the repository root.
+Run the commands below from that root.
+
+Current stage: case preparation and the finding generator are implemented.
+One complete live review with one finding is saved and its artifact integrity has
+been checked; its security claims remain unverified. Java-PoV reproduction is the
+next requested step. Claim extraction and independent claim verification remain pending. See
+[WORKPLAN.md](WORKPLAN.md) for the current plan and [HANDOFF.md](HANDOFF.md) for
+the checked state; keep this README synchronized with user-facing changes.
+
 The first step prepares **VUL4J-18**, the JSPWiki path-traversal case
 **CVE-2019-0225 / CWE-22**, for a localized code review.
 
@@ -10,14 +35,14 @@ Run from this repository with **Python 3.9+** and internet access to
 this preparation step:
 
 ```bash
-python3 prepare_case.py
+python3 src/01_prepare_case.py
 ```
 
 The script writes `data/VUL4J-18/`. It refuses to overwrite an existing output.
 For another copy, choose a new directory:
 
 ```bash
-python3 prepare_case.py --output data/VUL4J-18-copy
+python3 src/01_prepare_case.py --output data/VUL4J-18-copy
 ```
 
 | Output | Purpose |
@@ -82,68 +107,153 @@ python3 -m unittest -v
 
 ## Generate one localized review
 
-`generate_findings.py` uses the standard library and a single OpenAI Responses
-request. This provider is a provisional implementation choice; the experimental
-model and budget have not been selected. No real review has been run yet.
+`src/02_generate_findings.py` uses the standard library and a single OpenRouter
+Chat Completions request with an explicitly selected **`:free` model**.
+Paid model IDs and automatic routers are rejected before a run is created.
+No model download, local training or additional Python package is needed.
+The latest inspected `VUL4J-18-review-001` completed on 2026-09-23 at 14:31 UTC:
+one finding, `finish_reason: stop`, 7.656 seconds, 25,832 prompt tokens and 216
+completion tokens. It used Nemotron with an 8192-token limit and `--no-reasoning`;
+the provider reported zero reasoning tokens and zero cost. Saved hashes and the
+finding text match the request/source artifacts and raw response. This confirms
+technical completion, not the truth of the finding. Earlier attempts encountered
+an unavailable Qwen endpoint, token limits and Nvidia overload. Those earlier
+artifacts are no longer at the reused path; HANDOFF records their inspections.
 
-Set `OPENAI_API_KEY` in the local environment without putting it in a tracked
-file or command argument. After choosing the model (prefer a pinned snapshot)
-and budget, replace both placeholders below and use a new output directory:
+Create an [OpenRouter API key](https://openrouter.ai/settings/keys) and put it in
+`.env` at the repository root. Use `.env.example` as a template if the file does
+not exist:
 
-```bash
-python3 generate_findings.py \
-  --model MODEL_SNAPSHOT_ID \
-  --max-output-tokens OUTPUT_TOKEN_LIMIT \
-  --output data/runs/VUL4J-18-review-001
+```dotenv
+OPENROUTER_API_KEY=your-key-here
 ```
 
-The token limit includes reasoning tokens and is **not a monetary budget**;
-input tokens also cost money. Choose it with the selected model's pricing in
-mind. No model or token limit is silently selected. The HTTP timeout is 180
-seconds, with no automatic retry, repair request or follow-up. An uncertain
-network outcome is retained as an error, not automatically resubmitted.
+The generator automatically reads this file relative to its script location;
+no console key entry is needed on subsequent runs. `.env` is ignored by Git and
+is never copied into model inputs or run artifacts. Only the blank `.env.example`
+is versioned. An existing nonempty `OPENROUTER_API_KEY` environment variable takes
+precedence; `OPENAI_API_KEY` is not used.
+
+The small loader supports UTF-8 (including BOM), blank lines, whole-line comments
+and an optionally single- or double-quoted key value. Use one key entry, with no
+inline comments, `export`, variable expansion or multiline values. No additional
+Python package is needed.
+
+Prepare the case with `python3 src/01_prepare_case.py` if it is not already present.
+For any separately planned new review, choose an explicit token limit and a fresh
+run directory. The following settings produced the completed technical PoC;
+another run is not needed for the next Java-PoV step:
+
+```bash
+python3 src/02_generate_findings.py --model nvidia/nemotron-3-super-120b-a12b:free --max-output-tokens 8192 --no-reasoning --output data/runs/VUL4J-18-review-002
+```
+
+Both `--model` and the output-token limit are required; there is no default model.
+`--no-reasoning` sends `reasoning: {"enabled": false}` and records it in the request
+and manifest. Without the flag, provider defaults remain unchanged. Only use the
+flag on models supporting disabled reasoning; unsupported settings should fail
+under `require_parameters: true`, rather than be silently removed. The public
+Nemotron catalog checked on 2026-09-23 reports `mandatory: false` and reasoning
+enabled by default. The completed live attempt sent this flag and returned zero
+reported reasoning tokens; effects on review quality have not been evaluated.
+The example uses Nemotron 3 Super, listed with zero prompt/completion prices and
+JSON-format support in the live public catalog checked on 2026-09-23. This is a
+model that has produced one complete findings report. Its
+[free endpoint](https://openrouter.ai/nvidia/nemotron-3-super-120b-a12b:free) discloses
+logging for security and service improvement; use only the public benchmark input.
+The output limit is saved as `max_tokens` and is not a monetary budget.
+
+For the initial pipeline proof of concept, disabling reasoning is a reasonable
+technical trial, but it changes the experimental condition. It requests a response
+without the model's additional reasoning phase; it does not establish equal review
+quality. Token use and latency may decrease, while findings, their detail,
+uncertainty and the distribution of claim types may change. The size and direction
+of these effects have not been measured here.
+
+The complete response establishes report storage and provides input for subsequent
+claim extraction. It characterizes only this model, context and generation setting.
+One selected case cannot establish representative LLM security-review performance,
+with or without reasoning. The completed no-reasoning trial is technical validation,
+not a finalized evaluation configuration.
+
+Before evaluation, fix and document the model, prompt, source context, token budget,
+reasoning setting and run count. Keep technical trials separate from evaluation
+and retain failures. A small, predefined comparison with reasoning enabled and
+disabled is an optional later check, not a prerequisite for this PoC. Do not select
+settings based on obtaining preferred findings. Methodological planning belongs in
+[WORKPLAN.md](WORKPLAN.md).
+
+Only explicit model IDs ending in `:free` are permitted. The request also sets provider price ceilings
+to zero for prompt tokens, completion tokens and requests, and disables provider
+fallbacks. No model fallback, paid plugin or automatic retry is requested. If no
+free provider supports the requested parameters, the run fails visibly instead
+of switching to a paid endpoint. Free availability and limits may change; see
+[the current model catalog](https://openrouter.ai/api/v1/models) and
+[OpenRouter limits](https://openrouter.ai/docs/api-reference/limits).
 
 Only the five allowlisted files under `--model-input` (default:
-`data/VUL4J-18/model_input`) are read into the request. Root/file/directory
-symlinks within that input are rejected. Extra files are ignored. The versioned
-`review_prompt_v1.txt` and a view with paths and original one-based line numbers
-are sent; source bytes are separately preserved unchanged. No reference,
-manifest, case ID, project instructions, chat history, external sources or
-agent tools are supplied. The request disables input truncation and response
-storage, and requests JSON with only finding titles and reports, without claim
-type categories. This is report generation, not independent verification.
+`data/VUL4J-18/model_input`) enter the request. Root/file/directory symlinks within
+that input are rejected. Extra files are ignored. The versioned
+`resources/review_prompt_v1.txt` is the system message; paths and original one-based
+source line numbers form the user message. Source bytes are preserved separately.
+No reference, manifest, case ID, project instructions, chat history or agent tools
+are supplied. Context compression is explicitly disabled. JSON output is requested
+with only titles and reports, without claim categories. This generates reports;
+it does not independently verify their claims.
+
+The HTTP timeout is 180 seconds. There is no automatic retry, repair request or
+follow-up. An uncertain network outcome is retained as an error. OpenRouter chooses
+an eligible serving provider; its returned name, model and generation ID are saved
+when available. The model ID is not an immutable revision or a guarantee of identical
+future results. Data handling follows the account and serving-provider policies;
+the script makes no zero-retention promise.
 
 | Run output | Purpose |
 |---|---|
 | `model_input/`, `review_prompt_v1.txt` | Exact source and prompt bytes |
 | `request.json` | Exact HTTP request body, excluding the authorization header |
-| `generation_raw.json` | Unmodified provider response body, including HTTP errors; may not be valid JSON |
-| `findings.jsonl` | Validated titles/reports with stable IDs scoped to the saved run; report text is not corrected |
-| `run_manifest.json` | Case/run IDs, timestamps, duration, requested/returned model, sent parameters, hashes, status, available usage and errors |
+| `generation_raw.json` | Unmodified response body, including HTTP errors; may not be valid JSON |
+| `findings.jsonl` | Validated titles/reports with stable run-scoped IDs; text is not corrected |
+| `run_manifest.json` | Case/run IDs, timestamps, duration, model, serving provider, response ID, sent parameters, hashes, status, usage and errors |
 
 `completed` means structurally valid findings were saved, not that their claims
 are true. An explicit empty list produces `no_findings` and an empty JSONL file.
-Malformed output, refusals and incomplete responses produce `invalid_output`;
-HTTP/network failures or a missing key produce `run_error`. Neither error
-status produces a findings file. Raw response bytes are saved whenever received;
-there is no response file if the request was not sent or no body was received.
-Usage is saved as returned; `cost_usd` stays `null` (not zero), since the script
-does not calculate billing. Provider defaults not explicitly set remain visible
-only insofar as the provider returns them in the raw response.
+Only a single assistant completion with `finish_reason: stop` is accepted.
+Malformed output, refusals, tool calls and incomplete responses produce
+`invalid_output`; HTTP/network failures, top-level provider errors or a missing/invalid key configuration
+produce `run_error`. Neither error status produces a findings file. Raw response
+bytes are saved whenever received. Usage, including any reported cost, is preserved
+unchanged; `cost_usd` remains `null` because the script does not independently
+calculate billing. Provider defaults are visible only as returned in the response.
 
 Input/configuration errors before a run is created leave no run directory.
-Started runs remain on disk, and an existing output is always refused. A
-process killed before finalization can leave `running` in the manifest: that
-is an unfinished run, not evidence of no findings. All experimental outputs
-should remain under the ignored `data/` directory.
+Started runs remain on disk, and an existing output is always refused. A process
+killed before finalization can leave `running` in the manifest: that is an unfinished
+run, not evidence of no findings. Outputs belong under the ignored `data/` directory.
 
-The seven generator tests use synthetic responses and no network; together
-with the three preparation tests they cover the concrete isolation, preservation
-and failure risks. They do not establish live API/model compatibility. Protocol
-references: [OpenAI text generation](https://developers.openai.com/api/docs/guides/text),
-[JSON output](https://developers.openai.com/api/docs/guides/structured-outputs),
-[reasoning token limits](https://developers.openai.com/api/docs/guides/reasoning).
+The twelve generator tests use synthetic responses and no network. Together with
+three preparation tests they cover isolation, byte preservation, free-model
+restrictions, `.env` loading, credential exclusion, explicit reasoning control and failure handling. On Windows, the symlink test is explicitly
+skipped if the process lacks the required privilege; protection is not verified
+there. These tests do not establish live API/model compatibility.
 
-Next: select the experimental model and budget, make an API key available, and
-save one real review (including an empty result or failure). Then manually
-inspect any findings and their claims. Java-PoV reproduction is still pending.
+Protocol references: [Chat Completions](https://openrouter.ai/docs/api/reference/overview),
+[provider routing and price caps](https://openrouter.ai/docs/guides/routing/provider-selection),
+[context compression](https://openrouter.ai/docs/guides/features/message-transforms).
+
+Next requested step: execute the Java-PoV against vulnerable and fixed versions
+(step 1b in WORKPLAN). Keep the completed review unchanged; no further generator
+request is needed. Manual claim decomposition follows later.
+
+For `finish_reason: length`, the saved response is incomplete and must not be
+repaired or counted as findings. Reasoning can consume the same output budget;
+see [OpenRouter reasoning limits](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens).
+The CLI now prints the saved failure reason. Keep each run directory, even on
+failure, and choose a fresh path for an explicitly changed technical trial.
+
+If the response reports `503` with `Service temporarily overloaded`, retain the
+failed run. The observed error does not justify changing the prompt, token budget
+or reasoning mode. An explicitly chosen later technical attempt can use the same
+settings and a new output directory; its timing and outcome must remain recorded.
+An HTTP 200 alone does not indicate a successful generation: check the response
+body and final run status. No automatic retry is performed.

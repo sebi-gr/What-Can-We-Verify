@@ -1,14 +1,17 @@
 """Checks for reference leakage, preserved bytes, and safe failure."""
 
 import hashlib
+from importlib import import_module
 import json
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 from urllib.error import URLError
 
-import prepare_case
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+prepare_case = import_module("01_prepare_case")
 
 
 DATASET = (
@@ -32,11 +35,11 @@ class PrepareCaseTests(unittest.TestCase):
     def test_model_context_excludes_reference_and_preserves_bytes(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "case"
-            with patch("prepare_case.download", side_effect=fake_download):
+            with patch.object(prepare_case, "download", side_effect=fake_download):
                 prepare_case.prepare_case(output)
 
             model = output / "model_input"
-            paths = {str(path.relative_to(model)) for path in model.rglob("*") if path.is_file()}
+            paths = {path.relative_to(model).as_posix() for path in model.rglob("*") if path.is_file()}
             self.assertEqual(paths, {
                 "jspwiki-main/src/main/java/org/apache/wiki/WikiServlet.java",
                 "jspwiki-main/src/main/java/org/apache/wiki/url/DefaultURLConstructor.java",
@@ -60,7 +63,7 @@ class PrepareCaseTests(unittest.TestCase):
             output = Path(temporary)
             marker = output / "keep.txt"
             marker.write_text("existing experiment")
-            with patch("prepare_case.download") as download:
+            with patch.object(prepare_case, "download") as download:
                 with self.assertRaises(FileExistsError):
                     prepare_case.prepare_case(output)
                 download.assert_not_called()
@@ -70,7 +73,7 @@ class PrepareCaseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "case"
             responses = [DATASET, b"first downloaded file", URLError("network unavailable")]
-            with patch("prepare_case.download", side_effect=responses):
+            with patch.object(prepare_case, "download", side_effect=responses):
                 with self.assertRaises(URLError):
                     prepare_case.prepare_case(output)
             self.assertFalse(output.exists())
